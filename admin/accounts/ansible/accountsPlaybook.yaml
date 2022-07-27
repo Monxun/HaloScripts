@@ -42,7 +42,7 @@
       copy:
         dest: "./output/accounts_inventory_output.json"
         content: "{{inventory_hostname}}: {{accounts_inventory}}"
-      when: local_test
+      when: dev
       # delegate_to: localhost
 
 
@@ -61,4 +61,13 @@
           {{hostvars[host].accounts_inventory}}
 
           {% endfor %}
-      when: not local_test
+      when: not dev
+
+    - name: Upload/PUT file to S3 bucket
+      amazon.aws.aws_s3:
+        profile: personal
+        bucket: inventory
+        mode: put
+        object: "{{ ansible_date_time.iso8601 }}-{{file_output}}.json"
+        src: "/output/{{file_output}}.json"
+      when: not dev

@@ -1,3 +1,8 @@
 ---
 # ACCOUNTS VARS
-local_test: true
+dev: true
+file_output: accounts_inventory_output
+
+# S3
+s3_profile: personal
+bucket_name: inventory
