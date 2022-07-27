@@ -1,21 +1,20 @@
 ---
 - hosts: localhost
-  become: false
+  become: true
 
 # ////////////////////////////////////////////////////////////////////////////////////////
 #  VARIABLES
 # ////////////////////////////////////////////////////////////////////////////////////////
   vars_files:
-  - "../vars/cluster_vars.yaml"
+  - "./vars.yaml"
 
-  vars:
- 
- 
+  # vars:
+
 # ////////////////////////////////////////////////////////////////////////////////////////
 #  ENVIRONMENT VARIABLES
 # ////////////////////////////////////////////////////////////////////////////////////////
   environment:
-    HOSTIP: "{{ inventory_hostname }}"
+    ANSIBLE_HOST: "{{ inventory_hostname }}"
 
 # ////////////////////////////////////////////////////////////////////////////////////////
 #  TASKS
@@ -26,15 +25,40 @@
 #  GRAB ACCOUNTS
 # //////////////////////////////////////////////////////////////////////////////////////// 
 
-  # DEPLOY //////////////////////////////////////////////////////////////////////
+  # GRAB ACCOUNTS //////////////////////////////////////////////////////////////////////
     - name: Run Script for {{ inventory_hostname }} Accounts JSON
       shell:
       args:
         executable: /usr/bin/bash
-        cmd: bash deploy.sh
+        cmd: bash accountsJSON.sh
         chdir: ./
-      register: "{{ inventory_hostname }}-accounts"
-      # when: (destroy == "false") and (provisioner == "terraform")
+      register: accounts_inventory
+      # when: (key1 == "value1") and (key2 == "value2")
     # - debug:
     #     var: results.stdout
- 
+
+  # LOCAL TEST //////////////////////////////////////////////////////////////////////////
+    - name: Write results to local output file (DEV)
+      copy:
+        dest: "./output/accounts_inventory_output.json"
+        content: "{{inventory_hostname}}: {{accounts_inventory}}"
+      when: local_test
+      # delegate_to: localhost
+
+
+- hosts: localhost
+  gather_facts: false
+  vars_files:
+  - "./vars.yaml"
+  tasks:
+    - name: Write results to local output file (PRODUCTION)
+      copy:
+        dest: "./output/accounts_inventory_output.json"
+        content: |
+          {% for host in all %}
+          === {{ host }} ==
+
+          {{hostvars[host].accounts_inventory}}
+
+          {% endfor %}
+      when: not local_test
