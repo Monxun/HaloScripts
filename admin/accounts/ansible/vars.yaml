@@ -1,7 +1,9 @@
 ---
 # ACCOUNTS VARS
+hostgroup_selector: localhost
 dev: true
-file_output: accounts_inventory_output
+file_output_name: accounts_inventory_output
+output_csv: true
 
 # S3
 s3_profile: personal

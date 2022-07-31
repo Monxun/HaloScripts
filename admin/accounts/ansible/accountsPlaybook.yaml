@@ -1,14 +1,13 @@
 ---
-- hosts: localhost
+- hosts: "{{ hostgroup_selector }}"
   become: true
+  when: dev
 
 # ////////////////////////////////////////////////////////////////////////////////////////
 #  VARIABLES
 # ////////////////////////////////////////////////////////////////////////////////////////
   vars_files:
   - "./vars.yaml"
-
-  # vars:
 
 # ////////////////////////////////////////////////////////////////////////////////////////
 #  ENVIRONMENT VARIABLES
@@ -33,9 +32,6 @@
         cmd: bash accountsJSON.sh
         chdir: ./
       register: accounts_inventory
-      # when: (key1 == "value1") and (key2 == "value2")
-    # - debug:
-    #     var: results.stdout
 
   # LOCAL TEST //////////////////////////////////////////////////////////////////////////
     - name: Write results to local output file (DEV)
@@ -53,7 +49,7 @@
   tasks:
     - name: Write results to local output file (PRODUCTION)
       copy:
-        dest: "./output/accounts_inventory_output.json"
+        dest: "./output/{{file_output_name}}.json"
         content: |
           {% for host in all %}
           === {{ host }} ==
@@ -68,6 +64,15 @@
         profile: personal
         bucket: inventory
         mode: put
-        object: "{{ ansible_date_time.iso8601 }}-{{file_output}}.json"
-        src: "/output/{{file_output}}.json"
+        object: "{{ ansible_date_time.iso8601 }}-{{file_output_name}}.json"
+        src: "/output/{{file_output_name}}.json"
       when: not dev
+
+    - name: Run Script for {{ inventory_hostname }} Accounts CSV
+      shell:
+      args:
+        executable: /usr/bin/bash
+        cmd: cat /output/accounts_inventory_output.json| jq -r '(map(keys) | add | unique) as $cols | map(. as $row | $cols | map($row[.])) as $rows | $cols, $rows[] | @csv' 
+        chdir: ./
+      register: accounts_csv
+      when: output_csv
